@@ -15,7 +15,7 @@ class AdminAccountLoader(val siteUserRepository: SiteUserRepository, val bCryptP
 
     override fun run(vararg args: String?) {
 
-        Flux.fromIterable(hackathonProperties.adminAccounts).flatMap {
+        Flux.fromIterable(listOf(hackathonProperties.admin)).flatMap {
             logger.info("Creating user: $it")
             siteUserRepository.save(it.copy(password = bCryptPasswordEncoder.encode(it.password), roles = mutableSetOf("ADMIN", "USER")))
         }.thenMany(siteUserRepository.findAll()).subscribe({ logger.info("Created user $it") })

@@ -1,0 +1,7 @@
+proxy:
+  webapp-address: 'http://localhost:3000'
+  backend-address: 'http://localhost:8080'
+server:
+  port: 10800
+
+

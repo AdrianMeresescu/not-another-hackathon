@@ -1,8 +1,0 @@
-hackathon.adminAccounts:
-- email: admin
-  password: admin
-
-server:
-  session:
-    timeout: 0
-    persistent: true

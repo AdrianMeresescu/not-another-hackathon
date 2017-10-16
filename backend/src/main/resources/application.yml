@@ -1,10 +1,12 @@
-hackathon.adminAccounts:
-- email: admin
-  password: admin
-
 server:
   session:
-    timeout: 3600
+    timeout: -1
     persistent: true
     cookie:
       name: 'hackathon-backend'
+
+spring:
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017

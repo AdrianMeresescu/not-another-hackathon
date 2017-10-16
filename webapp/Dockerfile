@@ -1,9 +1,7 @@
-S
-FROM maven:latest
+FROM nginx:alpine
 
-COPY src /
-COPY pom.xml /
-
-RUN mvn install
-
-CMD java -jar /target/webapp-4.2-SNAPSHOT.jar
+COPY ["css/", "/usr/share/nginx/html/css/" ]
+COPY ["js/", "/usr/share/nginx/html/js/" ]
+COPY ["vendor/", "/usr/share/nginx/html/vendor/" ]
+COPY ["index.html", "/usr/share/nginx/html/" ]
+COPY conf/nginx.conf /etc/nginx/conf.d/default.conf

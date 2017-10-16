@@ -1,8 +1,5 @@
-FROM devplant/not-another-hackathon-base:latest
+FROM openjdk:alpine
 
-COPY src /src
-COPY pom.xml /pom.xml
+COPY ["backend-4.2-SNAPSHOT.jar", "/"]
 
-RUN mvn install
-
-CMD java -jar /target/backend-4.2-SNAPSHOT.jar
+CMD java -jar /backend-4.2-SNAPSHOT.jar
