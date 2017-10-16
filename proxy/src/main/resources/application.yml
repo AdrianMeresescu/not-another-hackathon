@@ -3,3 +3,9 @@ proxy:
   backend-address: 'http://localhost:8080'
 server:
   port: 10800
+  session:
+    cookie:
+      name: 'hackathon-proxy'
+    timeout: 3600
+    persistent: true
+

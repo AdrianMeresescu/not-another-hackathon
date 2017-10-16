@@ -4,5 +4,7 @@ hackathon.adminAccounts:
 
 server:
   session:
-    timeout: 0
+    timeout: 3600
     persistent: true
+    cookie:
+      name: 'hackathon-backend'

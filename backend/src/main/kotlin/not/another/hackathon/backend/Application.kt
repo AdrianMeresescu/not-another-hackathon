@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import not.another.hackathon.backend.properties.HackathonProperties
 import not.another.hackathon.backend.user.LoginRequest
 import not.another.hackathon.backend.user.SiteUserDetailsRepository
-import not.another.hackathon.backend.user.SiteUserRepository
 import org.apache.commons.io.IOUtils
-import org.slf4j.LoggerFactory
-import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -20,13 +17,19 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.HttpSecurity.http
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.WebFilterExchange
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
+import org.springframework.security.web.server.authentication.logout.LogoutHandler
 import org.springframework.security.web.server.context.WebSessionSecurityContextRepository
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
-import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
+import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
+import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 
 
@@ -53,12 +56,26 @@ class Application {
         http.formLogin().disable()
         http.httpBasic().disable()
         http.authorizeExchange().pathMatchers("/api/register").permitAll()
+        http.authorizeExchange().pathMatchers("/api/exists").permitAll()
         http.authorizeExchange().pathMatchers("/api/login").permitAll()
-        http.authorizeExchange().pathMatchers("/api/admin/**").hasRole("ADMIN")
+        http.authorizeExchange().pathMatchers("/api/admin/**").hasAuthority("ADMIN")
         http.authorizeExchange().pathMatchers("/api/user/**").authenticated()
+        http.authorizeExchange().pathMatchers("/api/logout").authenticated()
+
+        http.logout().logoutUrl("/api/logout").logoutHandler(SimpleLogoutHandler())
 
         val authenticationFilter = AuthenticationWebFilter(manager)
-        authenticationFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, "/api/login"))
+        authenticationFilter.setRequiresAuthenticationMatcher(AndServerWebExchangeMatcher(listOf(
+                PathPatternParserServerWebExchangeMatcher("/api/login", HttpMethod.POST),
+                ServerWebExchangeMatcher {
+                    exchange ->
+                    if (SecurityContextHolder.getContext()?.authentication?.name != null) {
+                        return@ServerWebExchangeMatcher ServerWebExchangeMatcher.MatchResult.notMatch()
+                    } else {
+                        return@ServerWebExchangeMatcher ServerWebExchangeMatcher.MatchResult.match()
+                    }
+                })
+        ))
         authenticationFilter.setAuthenticationFailureHandler({
             webFilterExchange, _ ->
             Mono.fromRunnable { webFilterExchange.exchange.response.statusCode = HttpStatus.FORBIDDEN }
@@ -79,20 +96,21 @@ class Application {
 
 }
 
-@Component
-class AdminAccountLoader(val siteUserRepository: SiteUserRepository, val bCryptPasswordEncoder: BCryptPasswordEncoder, val hackathonProperties: HackathonProperties) : CommandLineRunner {
 
-    private val log = LoggerFactory.getLogger(Application::class.java)
+class SimpleLogoutHandler : LogoutHandler {
 
-    override fun run(vararg args: String?) {
+    val repository = WebSessionSecurityContextRepository()
 
-        Flux.fromIterable(hackathonProperties.adminAccounts).flatMap {
-            log.info("Creating user: $it")
-            siteUserRepository.save(it.copy(password = bCryptPasswordEncoder.encode(it.password), roles = mutableSetOf("ADMIN", "USER")))
-        }.thenMany(siteUserRepository.findAll()).subscribe({ log.info("Created user $it") })
+    override fun logout(exchange: WebFilterExchange, authentication: Authentication?): Mono<Void> {
+        return repository.save(exchange.exchange, null as SecurityContext?).then(returnOk(exchange.exchange))
+    }
+
+    fun returnOk(exchange: ServerWebExchange): Mono<Void> {
+        return Mono.fromRunnable { exchange.response.statusCode = HttpStatus.OK }
     }
 
 }
+
 
 fun main(args: Array<String>) {
     SpringApplication.run(Application::class.java, *args)
