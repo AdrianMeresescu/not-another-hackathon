@@ -1,0 +1,12 @@
+server:
+  session:
+    timeout: -1
+    persistent: true
+    cookie:
+      name: 'hackathon-backend'
+
+spring:
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017

@@ -1,1 +1,8 @@
 node_modules
+node_modules/
+target/
+.idea
+*.iml
+.DS_Store
+.backend/
+.proxy/

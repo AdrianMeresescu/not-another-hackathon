@@ -29,6 +29,7 @@
     "bootstrap": "^4.0.0-beta",
     "jquery": "^3.2.1",
     "jquery.easing": "^1.4.1",
+    "js-cookie": "^2.1.4",
     "popper.js": "^1.11.1"
   },
   "devDependencies": {

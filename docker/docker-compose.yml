@@ -1,0 +1,36 @@
+version: '2'
+volumes:
+  mongodata:
+    driver: local
+services:
+    proxy:
+        container_name: "proxy"
+        image: devplant/not-another-hackathon-proxy
+        restart: on-failure
+        ports:
+            - 10800:10800      
+    backend:
+        container_name: "backend"
+        image: devplant/not-another-hackathon-backend
+        restart: on-failure
+        environment:
+            - HACKATHON_ADMIN_EMAIL=admin
+            - HACKATHON_ADMIN_PASSWORD=admin123
+        links:
+            - mongodb
+        depends_on:
+            - mongodb                            
+    webapp:
+        container_name: "webapp"
+        image: devplant/not-another-hackathon-webapp
+        restart: on-failure    
+    mongodb:
+        image: mongo:latest
+        restart: on-failure
+        container_name: "mongodb"
+        environment:
+          - MONGO_DATA_DIR=/data/db
+          - MONGO_LOG_DIR=/dev/null
+        volumes:
+          - mongodata:/data/db
+        command: mongod --smallfiles --logpath=/dev/null # --quiet
